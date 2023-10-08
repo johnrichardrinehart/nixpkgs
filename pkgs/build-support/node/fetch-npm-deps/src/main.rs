@@ -242,10 +242,13 @@ fn main() -> anyhow::Result<()> {
 
     let cache = Cache::new(out.join("_cacache"));
 
+    let sec = std::time::Duration::from_millis(1000);
     packages.into_par_iter().try_for_each(|package| {
         eprintln!("{}", package.name);
 
         let tarball = package.tarball()?;
+
+        std::thread::sleep(sec);
         let integrity = package.integrity().map(ToString::to_string);
 
         cache
