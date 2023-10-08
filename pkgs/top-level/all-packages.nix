@@ -374,6 +374,8 @@ with pkgs;
 
   brev-cli = callPackage ../development/misc/brev-cli { };
 
+  bruno = callPackage ../development/web/bruno { };
+
   buf = callPackage ../development/tools/buf { };
 
   cbfmt = callPackage ../development/tools/cbfmt { };
