@@ -1,0 +1,70 @@
+diff --git a/make.sh b/make.sh
+index 60515591245..2a1bd61138b 100755
+--- a/make.sh
++++ b/make.sh
+@@ -10,8 +10,9 @@ JOB=`sed -n "N;/processor/p" /proc/cpuinfo|wc -l`
+ SUPPORT_LIST=`ls configs/*[r,p][x,v,k][0-9][0-9]*_defconfig`
+ CMD_ARGS=$1
+ 
++RKBIN="${RKBIN:-../rkbin}"
+ ########################################### User can modify #############################################
+-RKBIN_TOOLS=../rkbin/tools
++RKBIN_TOOLS=${RKBIN:-../rkbin}/tools
+ CROSS_COMPILE_ARM32=../prebuilts/gcc/linux-x86/arm/gcc-linaro-6.3.1-2017.05-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-
+ CROSS_COMPILE_ARM64=../prebuilts/gcc/linux-x86/aarch64/gcc-linaro-6.3.1-2017.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+ ########################################### User not touch #############################################
+@@ -24,7 +25,6 @@ INI_TRUST=
+ INI_LOADER=
+ 
+ # Declare rkbin repository path, updated in prepare()
+-RKBIN=
+ 
+ # Declare global toolchain path for CROSS_COMPILE, updated in select_toolchain()
+ TOOLCHAIN=
+@@ -698,8 +698,11 @@ function pack_loader_image()
+ {
+ 	rm -f *loader*.bin *download*.bin *idblock*.img
+ 	cd ${RKBIN}
++	echo "Compiling boot_merger from $PWD with $MY_INCLUDE_PATH";
+ 	DEF_PATH=${RKBIN}/`filt_val "^PATH" ${INI_LOADER}`
+ 	IDB_PATH=${RKBIN}/`filt_val "IDB_PATH" ${INI_LOADER}`
++	export C_INCLUDE_PATH="$MY_INCLUDE_PATH";
++	${TOOLCHAIN}gcc -o /build/source/tools/boot_merger /build/source/tools/rockchip/boot_merger.c
+ 	${SCRIPT_LOADER} --ini ${INI_LOADER}
+ 	cd -
+ 	if [ -f ${DEF_PATH} ]; then
+diff --git a/scripts/loader.sh b/scripts/loader.sh
+index 0237bca6ceb..a45b6207174 100755
+--- a/scripts/loader.sh
++++ b/scripts/loader.sh
+@@ -35,7 +35,8 @@ if [ ${COUNT} -eq 1 ]; then
+ 	IMG=`sed -n "/PATH=/p" ${INI} | tr -d '\r' | cut -d '=' -f 2`
+ 	cp ${IMG} ./
+ else
+-	./tools/boot_merger ${INI}
++	echo "Executing ./tools/boot_merger from $PWD with INI ${INI}";
++	/build/source/tools/boot_merger --verbose ${INI}
+ fi
+ 
+ echo "pack loader okay! Input: ${INI}"
+diff --git a/tools/rockchip/boot_merger.c b/tools/rockchip/boot_merger.c
+index 48c87530c9b..5edd120f212 100644
+--- a/tools/rockchip/boot_merger.c
++++ b/tools/rockchip/boot_merger.c
+@@ -7,6 +7,8 @@
+ #include <time.h>
+ #include <sys/stat.h>
+ #include <version.h>
++#include <stdio.h>
++#include <stddef.h>
+ 
+ /* #define USE_P_RC4 */
+ 
+@@ -429,7 +431,6 @@ static bool parseOpts_from_file(void)
+ 			continue;
+ 		} else {
+ 			LOGE("unknown sec: %s!\n", buf);
+-			goto end;
+ 		}
+ 		if (SCANF_EAT(file) != 0) {
+ 			goto end;
