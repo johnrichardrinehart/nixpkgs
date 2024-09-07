@@ -558,6 +558,66 @@ in {
     filesToInstall = [ "u-boot.itb" "idbloader.img" "u-boot-rockchip.bin" "u-boot-rockchip-spi.bin" ];
   };
 
+  ubootRock5ModelC = (buildUBoot {
+    #src = /home/john/u-boot/upstream;
+    src = fetchFromGitHub {
+      repo = "u-boot";
+      owner = "radxa";
+      rev = "a8a093ff31d7c8d82c170980705288efbfff02d2";
+      hash = "sha256-41CH6gDieF58d5stUvfQdEpiXqoXVfGsI+xtIczVrFs=";
+      #hash = lib.fakeHash;
+    };
+
+    #version = "radxa-c3383d255872d6beb79bacffd52e438f9125c030";
+    version = "2017.09";
+    defconfig = "rock-5c-rk3588s_defconfig";
+    extraMeta.platforms = ["aarch64-linux"];
+    filesToInstall = [ "uboot.img" "idbloader.img" "fit/uboot.itb" ];
+    patches = [
+      ./u-boot-radxa.patch
+    #  ./rock-5c.patch
+    ];
+
+    #extraMakeFlags = [ "--keep-going" ];
+    #extraConfig = ''
+    #  CONFIG_SYS_LOAD_ADDR=0xc00800
+    #  CONFIG_SPL_MAX_SIZE=0x14C98
+    #  CONFIG_SPL_BOARD_INIT=n
+    #  CONFIG_SPL_FIT_IMAGE_POST_PROCESS=n
+    #  #CONFIG_USE_SPL_FIT_GENERATOR=y
+    #'';
+  }).overrideAttrs (old: {
+    postPatch = old.postPatch + ''
+      patchShebangs arch/arm/mach-rockchip;
+      patchShebangs ./make.sh;
+      ln -s ${buildPackages.gcc}/bin/ar ./aarch64-linux-gnu-ar
+      ln -s ${buildPackages.gcc}/bin/gcc ./aarch64-linux-gnu-gcc
+      ln -s ${buildPackages.gcc}/bin/ld ./aarch64-linux-gnu-ld
+      ln -s ${buildPackages.gcc}/bin/nm ./aarch64-linux-gnu-nm
+      ln -s ${buildPackages.gcc}/bin/objcopy ./aarch64-linux-gnu-objcopy
+      ln -s ${buildPackages.gcc}/bin/objdump ./aarch64-linux-gnu-objdump
+      ln -s ${buildPackages.gcc}/bin/readelf ./aarch64-linux-gnu-readelf
+    '';
+
+    nativeBuildInputs = old.nativeBuildInputs ++ [ buildPackages.python27 ];
+    buildPhase = ''
+      cp -r "${rkbin.src}" $PWD/rkbin;
+      chmod -R u+w $PWD/rkbin;
+      export MY_INCLUDE_PATH="${buildPackages.glibc.dev}/include:$PWD/include";
+      PYTHON=${buildPackages.python27}/bin/python2 RKBIN="$PWD/rkbin" ./make.sh rock-5c-rk3588s
+
+      ./tools/mkimage \
+        -n rk3588 \
+        -T rksd \
+        -d "$ROCKCHIP_TPL":./spl/u-boot-spl.bin \
+        idbloader.img;
+    '';
+    dontFixup = true;
+    BL31 = "${armTrustedFirmwareRK3588}/bl31.elf";
+    ROCKCHIP_TPL = rkbin.TPL_RK3588;
+  });
+
+
   ubootRock64 = buildUBoot {
     defconfig = "rock64-rk3328_defconfig";
     extraMeta.platforms = [ "aarch64-linux" ];
