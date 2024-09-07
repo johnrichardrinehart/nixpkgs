@@ -10242,6 +10242,7 @@ with pkgs;
     ubootRaspberryPiZero
     ubootRock4CPlus
     ubootRock5ModelB
+    ubootRock5ModelC
     ubootRock64
     ubootRock64v2
     ubootRockPiE
