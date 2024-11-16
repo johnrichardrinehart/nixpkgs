@@ -27,6 +27,7 @@ let
     firmware = config.hardware.firmware;
     allowMissing = config.boot.initrd.allowMissingModules;
     inherit (config.boot.initrd) extraFirmwarePaths;
+#    allowMissing = true; # d3916006fa5f (feat(Rock5C): working u-boot (with debug stuff...))
   };
 
   # The initrd only has to mount `/` or any FS marked as necessary for
