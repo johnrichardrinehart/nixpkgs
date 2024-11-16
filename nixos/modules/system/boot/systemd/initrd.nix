@@ -107,6 +107,7 @@ let
     firmware = config.hardware.firmware;
     allowMissing = false;
     inherit (config.boot.initrd) extraFirmwarePaths;
+    #allowMissing = true; # d3916006fa5f (feat(Rock5C): working u-boot (with debug stuff...))
   };
 
   initrdBinEnv = pkgs.buildEnv {
