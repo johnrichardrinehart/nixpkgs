@@ -567,17 +567,22 @@ in {
       hash = "sha256-41CH6gDieF58d5stUvfQdEpiXqoXVfGsI+xtIczVrFs=";
     };
 
+    extraConfig = ''
+       CONFIG_SPL_LOG_MAX_LEVEL=7
+       CONFIG_LOG_MAX_LEVEL=7
+       CONFIG_LOGLEVEL=7
+    '';
+
     version = "2017.09";
     defconfig = "rock-5c-rk3588s_defconfig";
     extraMeta.platforms = ["aarch64-linux"];
     filesToInstall = [ "uboot.img" "idbloader.img" "fit/uboot.itb" ];
     patches = [
       ./u-boot-radxa.patch
+      ./debug.patch
     ];
 
     postUnpack = ''
-    echo "after unpacking...";
-    echo "linking ${buildPackages.gcc}/bin/";
     for file in $(ls -1 ${buildPackages.gcc}/bin); do
       cmd=$(basename "$file" | awk -F'-' '{print $NF}');
 
