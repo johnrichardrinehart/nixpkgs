@@ -798,6 +798,7 @@ in
     patches = [
       ./u-boot-radxa.patch
       ./debug.patch
+      ./devicetree.patch
     ];
 
     postUnpack = ''
@@ -806,7 +807,7 @@ in
 
       echo "linking ${buildPackages.gcc}/bin/$file to /build/source/aarch64-linux-gnu-$cmd"
 
-      ln -s ${buildPackages.gcc}/bin/$file /build/source/aarch64-linux-gnu-$cmd
+      ln -s ${buildPackages.gcc}/bin/$file $NIX_BUILD_TOP/source/aarch64-linux-gnu-$cmd
     done
     '';
   }).overrideAttrs (old: {
