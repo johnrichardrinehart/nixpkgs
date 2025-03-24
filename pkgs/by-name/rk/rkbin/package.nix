@@ -3,6 +3,7 @@
   lib,
   fetchFromGitHub,
   rkbin,
+  autoPatchelfHook,
 }:
 
 stdenvNoCC.mkDerivation {
@@ -18,9 +19,15 @@ stdenvNoCC.mkDerivation {
 
   installPhase = ''
     mkdir $out
-    mv bin doc $out/
+    mv bin doc RKBOOT RKTRUST $out/
+    mkdir $out/tools
+    mv tools/loaderimage $out/tools
     cp LICENSE $out/doc/LICENSE
   '';
+
+  nativeBuildInputs = [
+    autoPatchelfHook
+  ];
 
   passthru = {
     BL31_RK3568 = "${rkbin}/bin/rk35/rk3568_bl31_v1.45.elf";
