@@ -1,9 +1,12 @@
 #! @shell@
 
+set -x
+
+echo -e "running John's init"
+
 systemConfig=@systemConfig@
 
 export HOME=/root PATH="@path@"
-
 
 if [ "${IN_NIXOS_SYSTEMD_STAGE1:-}" != true ]; then
     # Process the kernel command line.

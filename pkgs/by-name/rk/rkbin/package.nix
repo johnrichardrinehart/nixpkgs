@@ -1,8 +1,8 @@
-{
-  stdenv,
-  lib,
-  fetchFromGitHub,
-  rkbin,
+{ stdenv
+, autoPatchelfHook
+, lib
+, fetchFromGitHub
+, rkbin
 }:
 
 stdenv.mkDerivation {
@@ -18,9 +18,15 @@ stdenv.mkDerivation {
 
   installPhase = ''
     mkdir $out
-    mv bin doc $out/
+    mv bin doc RKBOOT RKTRUST $out/
+    mkdir $out/tools
+    mv tools/loaderimage $out/tools
     cp LICENSE $out/doc/LICENSE
   '';
+
+  nativeBuildInputs = [
+    autoPatchelfHook
+  ];
 
   passthru = {
     BL31_RK3568 = "${rkbin}/bin/rk35/rk3568_bl31_v1.44.elf";
