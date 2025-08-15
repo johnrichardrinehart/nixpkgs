@@ -833,7 +833,7 @@ in
     ];
   };
 
-  ubootRock5ModelC4 = buildUBoot {
+  ubootRock5ModelC = buildUBoot {
     src = /home/john/code/repos/github.com/radxa/u-boot/u-boot;
     version = "john";
     defconfig = "rock-5c-rk3588s_defconfig";
@@ -842,127 +842,6 @@ in
     ROCKCHIP_TPL = rkbin.TPL_RK3588;
     filesToInstall = [ "u-boot.itb" "idbloader.img" "u-boot-rockchip.bin" "u-boot-dtb.img" ];
   };
-
-  ubootRock5ModelC3 = (buildUBoot {
-    src = /home/john/code/repos/github.com/radxa/u-boot/next-dev-v2024.10;
-    version = "2024.10";
-    defconfig = "rock-5c-rk3588s_defconfig";
-    extraMeta.platforms = ["aarch64-linux"];
-    BL31 = "${armTrustedFirmwareRK3588}/bl31.elf";
-    ROCKCHIP_TPL = rkbin.TPL_RK3588;
-    #filesToInstall = [ "u-boot.itb" "idbloader.img" "u-boot-rockchip.bin" "u-boot-rockchip-spi.bin" ];
-    filesToInstall = [ "u-boot.img" ];
-    postBuild = ''
-      function filt_val()
-      {
-        sed -n "/''${1}=/s/''${1}=//p" $2 | tr -d '\r' | tr -d '"'
-      }
-
-      set -x
-      head -n 20 .config;
-      grep UBOOT .config || true;
-
-      LOAD_ADDR=`sed -n "/CONFIG_SYS_TEXT_BASE=/s/CONFIG_SYS_TEXT_BASE=//p" include/autoconf.mk|tr -d '\r'`
-      U_KB=`filt_val "CONFIG_UBOOT_SIZE_KB" .config`
-      U_NUM=`filt_val "CONFIG_UBOOT_NUM" .config`
-      PLAT_UBOOT_SIZE="--size $((4*1024)) 4"
-
-      ls -lh ./scripts/uboot.sh;
-      head -n 10 ./scripts/uboot.sh;
-      cp -r "${buildPackages.rkbin}" $PWD/rkbin;
-      ls -lh ./rkbin/;
-
-      patchShebangs ./make.sh;
-
-      for file in $(ls -1 ${buildPackages.gcc}/bin); do
-        cmd=$(basename "$file" | awk -F'-' '{print $NF}');
-
-        echo "linking ${buildPackages.gcc}/bin/$file to /build/$src/aarch64-linux-gnu-$cmd"
-
-        ln -s ${buildPackages.gcc}/bin/$file /build/$src/aarch64-linux-gnu-$cmd
-      done
-
-      ARG_LIST_FIT="--ini-trust ./rkbin/RKTRUST/RK3588TRUST.ini --ini-loader ./rkbin/RKBOOT/RK3588MINIALL.ini";
-      ./scripts/fit.sh ''${ARG_LIST_FIT} --chip RK3588
-      #./scripts/uboot.sh --load $LOAD_ADDR $PLAT_UBOOT_SIZE;
-      echo $?
-    '';
-  });
-
-  ubootRock5ModelC2 = buildUBoot {
-    src = /home/john/code/repos/github.com/radxa/u-boot/next-dev-v2024.03;
-    version = "2024-john";
-    defconfig = "rock-5c-rk3588s_defconfig";
-    extraMeta.platforms = ["aarch64-linux"];
-    BL31 = "${armTrustedFirmwareRK3588}/bl31.elf";
-    ROCKCHIP_TPL = rkbin.TPL_RK3588;
-    filesToInstall = [ "u-boot.itb" "idbloader.img" ];
-  };
-
-  ubootRock5ModelC = (buildUBoot {
-    src = fetchFromGitHub {
-      repo = "u-boot";
-      owner = "radxa";
-      rev = "a8a093ff31d7c8d82c170980705288efbfff02d2";
-      hash = "sha256-41CH6gDieF58d5stUvfQdEpiXqoXVfGsI+xtIczVrFs=";
-    };
-
-    extraConfig = ''
-       CONFIG_SPL_LOG_MAX_LEVEL=7
-       CONFIG_LOG_MAX_LEVEL=7
-       CONFIG_LOGLEVEL=7
-    '';
-
-    version = "2017.09";
-    defconfig = "rock-5c-rk3588s_defconfig";
-    extraMeta.platforms = ["aarch64-linux"];
-    filesToInstall = [ "uboot.img" "idbloader.img" "fit/uboot.itb" ];
-    patches = [
-      ./u-boot-radxa.patch
-      ./debug.patch
-      ./devicetree.patch
-    ];
-
-    postUnpack = ''
-    src=next-dev-v2024.03;
-    for file in $(ls -1 ${buildPackages.gcc}/bin); do
-      cmd=$(basename "$file" | awk -F'-' '{print $NF}');
-
-      echo "linking ${buildPackages.gcc}/bin/$file to /build/$src/aarch64-linux-gnu-$cmd"
-
-      ln -s ${buildPackages.gcc}/bin/$file /build/$src/aarch64-linux-gnu-$cmd
-    done
-    '';
-  }).overrideAttrs (old: {
-    postPatch = old.postPatch + ''
-      patchShebangs arch/arm/mach-rockchip;
-      patchShebangs ./make.sh;
-    '';
-
-    nativeBuildInputs = old.nativeBuildInputs ++ [ buildPackages.python27 ];
-    buildPhase = ''
-      mv /build/next-dev-v2024.03 /build/source;
-      cd /build/source;
-      cp -r "${rkbin.src}" $PWD/rkbin;
-      chmod -R u+w $PWD/rkbin;
-      export MY_INCLUDE_PATH="${glibc.dev}/include:$PWD/include";
-      PYTHON=${buildPackages.python27}/bin/python2 \
-        RKBIN="$PWD/rkbin" \
-        ./make.sh rock-5c-rk3588s
-      PYTHON=${buildPackages.python27}/bin/python2 \
-        RKBIN="$PWD/rkbin" \
-        ./make.sh rock-5c-rk3588s --fdt arch/arm/dts/rk3588s-rock-5c.dtb
-
-      ./tools/mkimage \
-        -n rk3588 \
-        -T rksd \
-        -d "$ROCKCHIP_TPL":./spl/u-boot-spl.bin \
-        idbloader.img;
-    '';
-    BL31 = "${armTrustedFirmwareRK3588}/bl31.elf";
-    ROCKCHIP_TPL = rkbin.TPL_RK3588;
-  });
-
 
   ubootRock64 = buildUBoot {
     defconfig = "rock64-rk3328_defconfig";
