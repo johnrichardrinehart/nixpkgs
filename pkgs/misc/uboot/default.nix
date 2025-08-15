@@ -74,7 +74,8 @@ let
 
         patches = [
           #./0001-configs-rpi-allow-for-bigger-kernels.patch
-        ] ++ extraPatches;
+        ]
+        ++ extraPatches;
 
         postPatch = ''
           ${lib.concatMapStrings (script: ''
@@ -717,15 +718,27 @@ in
     ];
   };
 
-  ubootRock5ModelC = buildUBoot {
-    src = /home/john/code/repos/github.com/radxa/u-boot/u-boot;
-    version = "john";
-    defconfig = "rock-5c-rk3588s_defconfig";
-    extraMeta.platforms = ["aarch64-linux"];
-    BL31 = "${armTrustedFirmwareRK3588}/bl31.elf";
-    ROCKCHIP_TPL = rkbin.TPL_RK3588;
-    filesToInstall = [ "u-boot.itb" "idbloader.img" "u-boot-rockchip.bin" "u-boot-dtb.img" ];
-  };
+  ubootRock5ModelC =
+    let
+      version = "2025.07"; # 2025.04 minimum
+    in
+    buildUBoot {
+      inherit version;
+      src = fetchurl {
+        url = "https://ftp.denx.de/pub/u-boot/u-boot-${version}.tar.bz2";
+        hash = "sha256-D5M/bFpCaJW/MG6T5qxTxghw5LVM2lbZUhG+yZ5jvsc=";
+      };
+      defconfig = "rock-5c-rk3588s_defconfig";
+      extraMeta.platforms = [ "aarch64-linux" ];
+      BL31 = "${armTrustedFirmwareRK3588}/bl31.elf";
+      ROCKCHIP_TPL = rkbin.TPL_RK3588;
+      filesToInstall = [
+        "u-boot.itb"
+        "idbloader.img"
+        "u-boot-rockchip.bin"
+        "u-boot-dtb.img"
+      ];
+    };
 
   ubootRock64 = buildUBoot {
     defconfig = "rock64-rk3328_defconfig";
