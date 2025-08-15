@@ -8,6 +8,7 @@
   fetchpatch,
   fetchurl,
   flex,
+  glibc,
   gnutls,
   installShellFiles,
   libuuid,
