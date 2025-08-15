@@ -8523,9 +8523,6 @@ with pkgs;
     ubootRock4CPlus
     ubootRock5ModelB
     ubootRock5ModelC
-    ubootRock5ModelC2
-    ubootRock5ModelC3
-    ubootRock5ModelC4
     ubootRock64
     ubootRock64v2
     ubootRockPiE
