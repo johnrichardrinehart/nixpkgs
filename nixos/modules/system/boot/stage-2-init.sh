@@ -1,9 +1,5 @@
 #! @shell@
 
-set -x
-
-echo -e "running John's init"
-
 systemConfig=@systemConfig@
 
 export HOME=/root PATH="@path@"
