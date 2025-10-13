@@ -42,6 +42,8 @@ let
     && (lib.systems.equals hostPlatform targetPlatform);
 
   inherit (lib) optionals optional;
+
+#  stdcplusplusPatch = if atLeast15 then ./libstdc++-target_15.2.0.patch else ./libstdc++-target.patch;
 in
 
 #
@@ -52,6 +54,8 @@ in
 
 ## 1. Patches relevant on every platform ####################################
 
+# Pass the path to a C++ compiler directly in the Makefile.in
+#optional (!lib.systems.equals targetPlatform hostPlatform) [ stdcplusplusPatch ]
 optionals noSysDirs (
   [
     # Do not try looking for binaries and libraries in /lib and /usr/lib
