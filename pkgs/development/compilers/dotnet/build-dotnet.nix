@@ -106,10 +106,11 @@ mkWrapper type (
       makeWrapper
     ]
     ++ lib.optional stdenv.hostPlatform.isLinux autoPatchelfHook
-    ++ lib.optionals (type == "sdk" && stdenv.hostPlatform.isDarwin) [
+    ++ lib.optionals (type == "sdk") ([
       xmlstarlet
+    ] ++ (lib.optionals stdenv.hostPlatform.isDarwin [
       sigtool
-    ];
+    ]));
 
     buildInputs = [
       stdenv.cc.cc
