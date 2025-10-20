@@ -1,0 +1,96 @@
+{
+  lib,
+  stdenvNoCC,
+  fetchFromGitHub,
+  makeBinaryWrapper,
+  nodejs_24,
+  pnpm,
+  nix-update-script,
+}:
+let
+  depsHashes = {
+    "x86_64-linux" = "sha256-H+llfS6q/WqForfAmgriHOrvcjQX6xMikhhT+itCK3E=";
+    "aarch64-linux" = "sha256-JBFGJx32Tc/Bxvf386dnwzuTxui1nolD8r2rhXF7/wo=";
+  };
+in
+stdenvNoCC.mkDerivation (finalAttrs: {
+  pname = "ccusage";
+  version = "17.1.6";
+
+  src = fetchFromGitHub {
+    owner = "ryoppippi";
+    repo = "ccusage";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-aC7AYaTTLzYHhPP9sttcNxqVDFf/WjFq8pFF7UTslJ0=";
+  };
+
+  nativeBuildInputs = [
+    nodejs_24
+    pnpm.configHook
+    makeBinaryWrapper
+  ];
+
+  pnpmWorkspaces = [
+    "ccusage"
+    "@ccusage/terminal"
+    "@ccusage/internal"
+  ];
+
+  pnpmDeps = pnpm.fetchDeps {
+    inherit (finalAttrs)
+      pname
+      version
+      src
+      pnpmWorkspaces
+      ;
+    fetcherVersion = 2;
+    hash = depsHashes.${stdenvNoCC.hostPlatform.system};
+  };
+
+  postPatch = ''
+    # Skip generate:schema because:
+    # - config-schema.json already exists in source
+    # - generate:schema uses git commands, but fetchFromGitHub doesn't include .git directory
+    substituteInPlace apps/ccusage/package.json \
+      --replace-fail '"build": "pnpm run generate:schema && tsdown"' '"build": "tsdown"'
+  '';
+
+  buildPhase = ''
+    runHook preBuild
+
+    pnpm run --filter ccusage... build
+
+    # remove non-deterministic files
+    rm node_modules/.modules.yaml
+    rm node_modules/.pnpm-workspace-state-v1.json
+    find . -type d -name .bin -exec rm -r {} +
+
+    runHook postBuild
+  '';
+
+  installPhase = ''
+    runHook preInstall
+
+    mkdir -p $out/{bin,lib/ccusage/apps}
+    cp -r apps/ccusage $out/lib/ccusage/apps/
+    cp -r node_modules package.json packages $out/lib/ccusage/
+
+    makeWrapper ${lib.getExe nodejs_24} $out/bin/ccusage \
+      --inherit-argv0 \
+      --add-flags $out/lib/ccusage/apps/ccusage/dist/index.js
+
+    runHook postInstall
+  '';
+
+  passthru.updateScript = nix-update-script { };
+
+  meta = {
+    description = "CLI tool for analyzing Claude Code usage from local JSONL files";
+    homepage = "https://ccusage.com";
+    changelog = "https://github.com/ryoppippi/ccusage/releases/tag/v${finalAttrs.version}";
+    license = lib.licenses.mit;
+    platforms = lib.platforms.all;
+    maintainers = [ lib.maintainers.cohei ];
+    mainProgram = "ccusage";
+  };
+})
